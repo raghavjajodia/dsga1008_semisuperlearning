@@ -80,18 +80,18 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                 target_top_k = labels.view(-1, 1).expand(batchSize, top_k)
                 running_correct_top5 += pred_top_k.eq(target_top_k).int().sum().item()
                 
-                # Metrics
-                top_1_acc = running_corrects/n_samples
-                top_k_acc = running_correct_top5/n_samples
-                epoch_loss = running_loss / n_samples
+            # Metrics
+            top_1_acc = running_corrects/n_samples
+            top_k_acc = running_correct_top5/n_samples
+            epoch_loss = running_loss / n_samples
 
-                f.write('{} Loss: {:.4f} Top 1 Acc: {:.4f} Top k Acc: {:.4f}\n'.format(phase, epoch_loss, top_1_acc, top_k_acc))
-                f.flush()
+            f.write('{} Loss: {:.4f} Top 1 Acc: {:.4f} Top k Acc: {:.4f}\n'.format(phase, epoch_loss, top_1_acc, top_k_acc))
+            f.flush()
 
-                # deep copy the model
-                if phase == 'val' and epoch_acc > best_acc:
-                    best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict())
+            # deep copy the model
+            if phase == 'val' and top_k_acc > best_acc:
+                best_acc = top_k_acc
+                best_model_wts = copy.deepcopy(model.state_dict())
 
             torch.save(model.state_dict(), '%s/net_epoch_%d.pth' % (checkpoint_path, epoch))
 
