@@ -95,8 +95,6 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
 
             torch.save(model.state_dict(), '%s/net_epoch_%d.pth' % (checkpoint_path, epoch))
 
-        f.write()
-        f.flush()
 
     time_elapsed = time.time() - since
     f.write('Training complete in {:.0f}m {:.0f}s \n'.format(time_elapsed // 60, time_elapsed % 60))
