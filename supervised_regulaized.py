@@ -181,33 +181,33 @@ class Discriminator(nn.Module):
         self.ngpu = ngpu
         self.main = nn.Sequential(
             # input is (3) x 64 x 64
-            nn.Conv2d(3, ndf, 4, 2, 1, bias=False),
+            nn.Conv2d(3, opt.ndf, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (opt.ndf) x 32 x 32
-            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 2),
+            nn.Conv2d(opt.ndf, opt.ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(opt.ndf * 2),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (opt.ndf*2) x 16 x 16
-            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 4),
+            nn.Conv2d(opt.ndf * 2, opt.ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(opt.ndf * 4),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (opt.ndf*4) x 8 x 8
-            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 8),
+            nn.Conv2d(opt.ndf * 4, opt.ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(opt.ndf * 8),
             nn.LeakyReLU(0.2, inplace=True)
             # state size, (opt.ndf * 8) X 4 X 4
         )
         self.classif = nn.Sequential(
-            nn.Conv2d(ndf * 8, ndf * 16, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(ndf * 16),
+            nn.Conv2d(opt.ndf * 8, opt.ndf * 16, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(opt.ndf * 16),
             nn.LeakyReLU(0.2, inplace=True),
             # state size, (opt.ndf * 16) X 1 X 1
             Flatten(),
             nn.Dropout(p=0.6),
-            nn.Linear(ndf * 16, ndf * 20),
+            nn.Linear(opt.ndf * 16, opt.ndf * 20),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.8),
-            nn.Linear(ndf * 20, num_class)
+            nn.Linear(opt.ndf * 20, num_class)
         )
 
     def forward(self, input):
