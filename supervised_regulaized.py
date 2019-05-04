@@ -95,9 +95,6 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
 
             torch.save(model.state_dict(), '%s/net_epoch_%d.pth' % (checkpoint_path, epoch))
 
-        f.write()
-        f.flush()
-
     time_elapsed = time.time() - since
     f.write('Training complete in {:.0f}m {:.0f}s \n'.format(time_elapsed // 60, time_elapsed % 60))
     f.write('Best val Acc: {:4f} \n'.format(best_acc))
@@ -198,24 +195,25 @@ class Discriminator(nn.Module):
             nn.Conv2d(opt.ndf * 4, opt.ndf * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(opt.ndf * 8),
             nn.LeakyReLU(0.2, inplace=True),
-        )
-        self.flattened = Flatten()
-        self.dropout = nn.Dropout(p=0.6)
-        self.linear = nn.Linear(opt.ndf * 8 * 4 * 4, num_class)            
+            # state size, (opt.ndf * 8) X 4 X 4
+            nn.Conv2d(opt.ndf * 8, opt.ndf * 16, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(opt.ndf * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size, (opt.ndf * 16) X 1 X 1
+            Flatten(),
+            nn.Dropout(p=0.6),
+            nn.Linear(opt.ndf * 16, opt.ndf * 20),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.8)
+            nn.Linear(opt.ndf * 20, num_class)
+        )            
 
     def forward(self, input):
         if input.cuda and self.ngpu > 1:
-            output1 = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
-            output2 = nn.parallel.data_parallel(self.flattened, output1, range(self.ngpu))
-            output3 = nn.parallel.data_parallel(self.dropout, output2, range(self.ngpu))
-            output4 = nn.parallel.data_parallel(self.linear, output3, range(self.ngpu))
+            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
         else:
-            output1 = self.main(input)
-            output2 = self.flattened(output1)
-            output3 = self.dropout(output2)
-            output4 = self.linear(output3)
-            
-        return output4
+            output = self.main(input)
+        return output
 
 netD = Discriminator(opt.ngpu, len(class_names)).to(device)
 netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
