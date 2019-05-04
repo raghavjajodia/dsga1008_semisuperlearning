@@ -204,7 +204,7 @@ class Discriminator(nn.Module):
             nn.Dropout(p=0.6),
             nn.Linear(opt.ndf * 16, opt.ndf * 20),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.8)
+            nn.Dropout(p=0.8),
             nn.Linear(opt.ndf * 20, num_class)
         )            
 
