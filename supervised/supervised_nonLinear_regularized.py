@@ -116,6 +116,7 @@ parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. de
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--net', default='', help="path to net (to initialize)")
+parser.add_argument('--netCont', default='', help="path to net (to continue training)")
 parser.add_argument('--outf', default='.', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 
@@ -220,7 +221,13 @@ class Discriminator(nn.Module):
         return output2
 
 netD = Discriminator(opt.ngpu, len(class_names)).to(device)
-netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
+
+if opt.netCont !='':
+    netD.load_state_dict(torch.load(opt.netCont, map_location=device))
+    f.write('Loaded state and continuing training')
+elif opt.net !='':
+    netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
+    f.write('initialized state with pretrained net')
 
 for param in netD.parameters():
     param.requires_grad = False

@@ -217,8 +217,8 @@ class Discriminator(nn.Module):
 
 netD = Discriminator(opt.ngpu, len(class_names)).to(device)
 
-if opt.netC !='':
-    netD.load_state_dict(torch.load(opt.netC, map_location=device))
+if opt.netCont !='':
+    netD.load_state_dict(torch.load(opt.netCont, map_location=device))
     f.write('Loaded state and continuing training')
 elif opt.net !='':
     netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
