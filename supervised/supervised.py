@@ -159,7 +159,7 @@ image_datasets = {x: datasets.ImageFolder(os.path.join(opt.dataroot, x), data_tr
 
 assert image_datasets
 
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size= opt.batchSize, shuffle=True, num_workers=opt.workers) for x in ['train', 'val']}
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size= opt.batchSize, shuffle=True, pin_memory= True, num_workers=opt.workers) for x in ['train', 'val']}
 
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 class_names = image_datasets['train'].classes
