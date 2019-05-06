@@ -33,13 +33,22 @@ def load_unsuper_data(data_dir, batch_size):
 def load_super_data(data_dir, batch_size, split):
     """ Method returning a data loader for labeled data """
     # TODO: add data transformations if needed
-    transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225]),
-        ]
-    )
+    if split == "train":
+        transform = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225]),
+            ]
+        )
+    else:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                     std=[0.229, 0.224, 0.225]),
+            ]
+        )
+
     data = datasets.ImageFolder(f'{data_dir}/supervised/{split}', transform=transform)
     data_loader = DataLoader(
         data,
@@ -167,6 +176,7 @@ def train_model(generator, discriminator, criterion, scheduler, num_epochs = 25,
             f.write('-' * 10 + '\n')
             f.write(f'Epoch {epoch + 1} of {num_epochs}\n')
             f.write('-' * 10 + '\n')
+            f.flush()
         else:
             print('Epoch {}/{}'.format(epoch, num_epochs - 1))
             print('-' * 10)
@@ -264,10 +274,11 @@ def train_model(generator, discriminator, criterion, scheduler, num_epochs = 25,
                 n_correct_top_k += pred_top_k.eq(target_top_k).int().sum().item()
                 
                 # Log every 100 batches
-                if batch_size / (n_samples * 100) == 0:
+                if n_samples % (batch_size * 100) == 0:
                     if log:
                         f.write(f"Phase: {phase}, Generator Loss: {netG_loss / n_samples:.4f}, Discriminator Loss: {netD_loss / n_samples:.4f}, " +
-                          f"Top 1: {n_correct_top_1 / n_samples:.4f}, Top {top_k}: {n_correct_top_k / n_samples:.4f}\n")
+                                f"Top 1: {n_correct_top_1 / n_samples:.4f}, Top {top_k}: {n_correct_top_k / n_samples:.4f}\n")
+                        f.flush()
                     else:
                         print(f"Phase: {phase}, Generator Loss: {netG_loss / n_samples:.4f}, Discriminator Loss: {netD_loss / n_samples:.4f}, " +
                               f"Top 1: {n_correct_top_1 / n_samples:.4f}, Top {top_k}: {n_correct_top_k / n_samples:.4f}")
@@ -291,6 +302,7 @@ def train_model(generator, discriminator, criterion, scheduler, num_epochs = 25,
         f.write(f'\nTraining complete in {time_elapsed // 60:.0f} minutes and {time_elapsed % 60:.0f} seconds\n')
         f.write(f'Best Validation Accuracy: {best_acc:.4f}')
         f.write('='*50 + '\n')
+        f.flush()
         f.close()
 
     else:
