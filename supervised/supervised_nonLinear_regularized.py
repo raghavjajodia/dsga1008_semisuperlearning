@@ -229,11 +229,12 @@ elif opt.net !='':
     netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
     f.write('initialized state with pretrained net')
 
-for param in netD.parameters():
-    param.requires_grad = False
+#Turn on fine tuning
+#for param in netD.parameters():
+#    param.requires_grad = False
 
-for param in netD.classif.parameters():
-    param.requires_grad = True
+#for param in netD.classif.parameters():
+#    param.requires_grad = True
 
 criterion = nn.CrossEntropyLoss()
 optimizer_conv = optim.Adam(netD.classif.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=0.005)
