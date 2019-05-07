@@ -54,6 +54,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
 
             # Iterate over data.
             for batch_num, (inputs, labels) in enumerate(dataloaders[phase]):
+                data_time = time.time() - end
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 # zero the parameter gradients
@@ -63,6 +64,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
 
                 # forward
                 # track history if only in train
+                forward_start_time  = time.time()
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     loss = criterion(outputs, labels)
@@ -71,6 +73,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
+                forward_time = time.time() - forward_start_time
 
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
@@ -87,7 +90,10 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                     epoch_loss = running_loss / n_samples
 
                     f.write('{} Loss: {:.4f} Top 1 Acc: {:.4f} Top k Acc: {:.4f}\n'.format(phase, epoch_loss, top_1_acc, top_k_acc))
+                    f.write('Full Batch time: {} , Data load time: {} , Forward time: {}\n'.format(time.time() - batch_start_time, data_time, forward_time))
                     f.flush()
+
+                end = time.time()
                 
             # Metrics
             top_1_acc = running_corrects/n_samples
