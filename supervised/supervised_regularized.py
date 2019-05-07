@@ -184,10 +184,10 @@ class_names = image_datasets['train'].classes
 if torch.cuda.is_available() and not opt.cuda:
     f.write("WARNING: You have a CUDA device, so you should probably run with --cuda \n")
 
-f.flush()
 
 device = torch.device("cuda:0" if opt.cuda else "cpu")
-
+f.write("using " + str(device) + "\n")
+f.flush()
 
 class Flatten(nn.Module):
     def forward(self, x):
