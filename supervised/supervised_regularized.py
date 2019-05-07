@@ -52,6 +52,8 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
             running_correct_top5 = 0
             n_samples = 0
 
+            end = time.time()
+
             # Iterate over data.
             for batch_num, (inputs, labels) in enumerate(dataloaders[phase]):
                 data_time = time.time() - end
