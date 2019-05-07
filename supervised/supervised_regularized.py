@@ -92,7 +92,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                     epoch_loss = running_loss / n_samples
 
                     f.write('{} Loss: {:.4f} Top 1 Acc: {:.4f} Top k Acc: {:.4f}\n'.format(phase, epoch_loss, top_1_acc, top_k_acc))
-                    f.write('Full Batch time: {} , Data load time: {} , Forward time: {}\n'.format(time.time() - batch_start_time, data_time, forward_time))
+                    f.write('Full Batch time: {} , Data load time: {} , Forward time: {}\n'.format(time.time() - end, data_time, forward_time))
                     f.flush()
 
                 end = time.time()
