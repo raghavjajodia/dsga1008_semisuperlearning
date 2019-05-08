@@ -228,9 +228,10 @@ f.flush()
 
 
 #Model Initialization
-model_ft = models.resnet34(pretrained=False).to(device)
+model_ft = models.resnet34(pretrained=False)
 num_ftrs = model_ft.fc.in_features
 model_ft.fc = nn.Linear(num_ftrs, 4)
+model_ft = model_ft.to(device)
 
 if opt.netCont !='':
     model_ft.load_state_dict(torch.load(opt.netCont, map_location=device))
