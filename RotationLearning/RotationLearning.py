@@ -66,7 +66,7 @@ class RotationDataset(Dataset):
         return sample, rotation_labels
 
 #General Code for supervised train
-def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path, f, num_epochs=25):
+def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path, f, verbIter, num_epochs=25):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -126,7 +126,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                 pred_top_1 = torch.topk(outputs, k=1, dim=1)[1]
                 running_corrects += pred_top_1.eq(labels.view_as(pred_top_1)).int().sum().item()
                 
-                if batch_num % 100 == 0:
+                if batch_num % verbIter == 0:
                     # Metrics
                     top_1_acc = running_corrects/n_samples
                     epoch_loss = running_loss / n_samples
@@ -173,6 +173,7 @@ parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--netCont', default='', help="path to net (to continue training)")
 parser.add_argument('--outf', default='.', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
+parser.add_argument('--verbIter', type=int, help='number of batches for interval printing')
 
 opt = parser.parse_args()
 f = open("{}/training_logs.txt".format(opt.outf),"w+")
@@ -241,6 +242,6 @@ if opt.netCont !='':
 criterion = nn.CrossEntropyLoss()
 optimizer_conv = optim.Adam(model_ft.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=0.005)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
-model_ft = train_model(model_ft, criterion, optimizer_conv, exp_lr_scheduler, device, opt.outf, f, num_epochs=opt.niter)
+model_ft = train_model(model_ft, criterion, optimizer_conv, exp_lr_scheduler, device, opt.outf, f, verbIter, num_epochs=opt.niter)
 torch.save(model_ft.state_dict(), '%s/netD_best_weights.pth' % (opt.outf))
 f.close()
