@@ -232,6 +232,11 @@ f.flush()
 model_ft = models.resnet34(pretrained=False)
 num_ftrs = model_ft.fc.in_features
 model_ft.fc = nn.Linear(num_ftrs, 4)
+
+if opt.ngpu > 1:
+  print("Let's use", torch.cuda.device_count(), "GPUs!")
+  model_ft = nn.DataParallel(model_ft)
+
 model_ft = model_ft.to(device)
 
 if opt.netCont !='':
