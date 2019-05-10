@@ -46,24 +46,35 @@ class RotationDataset(Dataset):
     def __getitem__(self, idx):
         img0,clss = self.dataset[idx]
         
-        #Rotate PIL image multiple times
-        img1 = img0.rotate(90)
-        img2 = img0.rotate(180)
-        img3 = img0.rotate(270)
-        
-        img_list = [img0,img1,img2,img3]
-        
-        arr4 = np.arange(4)
-        np.random.shuffle(arr4)
-        img_newList = [img_list[arr4[0]], img_list[arr4[1]], img_list[arr4[2]], img_list[arr4[3]]]
-        
+        rot_class = np.random.randint(4)
+        rot_angle = rot_class * 90
+
+        rot_img = img0.rotate(rot_angle)
         if self.postTransform:
-            sampleList = list(map(lambda pilim : self.postTransform(pilim),img_newList))
+            sample = self.postTransform(rot_img)
         else:
-            sampleList = list(map(lambda pilim : transforms.ToTensor(pilim),img_newList))
-        sample = torch.stack(sampleList)
-        rotation_labels = torch.LongTensor(arr4)
-        return sample, rotation_labels
+            sample = transforms.ToTensor(rot_img)
+        return sample, rot_class
+
+
+        # #Rotate PIL image multiple times
+        # img1 = img0.rotate(90)
+        # img2 = img0.rotate(180)
+        # img3 = img0.rotate(270)
+        
+        # img_list = [img0,img1,img2,img3]
+        
+        # arr4 = np.arange(4)
+        # np.random.shuffle(arr4)
+        # img_newList = [img_list[arr4[0]], img_list[arr4[1]], img_list[arr4[2]], img_list[arr4[3]]]
+        
+        # if self.postTransform:
+        #     sampleList = list(map(lambda pilim : self.postTransform(pilim),img_newList))
+        # else:
+        #     sampleList = list(map(lambda pilim : transforms.ToTensor(pilim),img_newList))
+        # sample = torch.stack(sampleList)
+        # rotation_labels = torch.LongTensor(arr4)
+        # return sample, rotation_labels
 
 #General Code for supervised train
 def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path, f, verbIter, num_epochs=25):
@@ -94,11 +105,11 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
 
             # Iterate over data.
             for batch_num, (inputs, labels) in enumerate(dataloaders[phase]):
-                #Reshaping the inputs and labels
-                shapeList = list(inputs.size())[1:]
-                shapeList[0] = -1
-                inputs = torch.reshape(inputs, shapeList)
-                labels = torch.reshape(labels, (-1,))
+                # #Reshaping the inputs and labels
+                # shapeList = list(inputs.size())[1:]
+                # shapeList[0] = -1
+                # inputs = torch.reshape(inputs, shapeList)
+                # labels = torch.reshape(labels, (-1,))
 
                 data_time = time.time() - end
                 inputs = inputs.to(device)
