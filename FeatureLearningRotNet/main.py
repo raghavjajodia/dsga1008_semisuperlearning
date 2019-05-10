@@ -28,13 +28,12 @@ config['exp_dir'] = exp_directory # the place where logs, models, and other stuf
 print("Loading experiment %s from file: %s" % (args_opt.exp, exp_config_file))
 print("Generated logs, snapshots, and model files will be stored on %s" % (config['exp_dir']))
 
-print("Config is:")
-print(config)
-
 # Set train and test datasets and the corresponding data loaders
 data_train_opt = config['data_train_opt']
 data_test_opt = config['data_test_opt']
 num_imgs_per_cat = data_train_opt['num_imgs_per_cat'] if ('num_imgs_per_cat' in data_train_opt) else None
+
+
 
 dataset_train = GenericDataset(
     dataset_name=data_train_opt['dataset_name'],

@@ -6,7 +6,7 @@ data_train_opt = {}
 data_train_opt['batch_size'] = batch_size
 data_train_opt['unsupervised'] = True
 data_train_opt['epoch_size'] = None
-data_train_opt['random_sized_crop'] = True
+data_train_opt['random_sized_crop'] = False
 data_train_opt['dataset_name'] = 'imagenet'
 data_train_opt['split'] = 'train'
 

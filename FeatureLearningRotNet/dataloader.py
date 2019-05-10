@@ -20,7 +20,7 @@ from pdb import set_trace as breakpoint
 
 # Set the paths of the datasets here.
 _CIFAR_DATASET_DIR = './datasets/CIFAR'
-_IMAGENET_DATASET_DIR = '../ssl_data_96/unsupervised_split'
+_IMAGENET_DATASET_DIR = '../../ssl_data_96/unsupervised_split'
 _PLACES205_DATASET_DIR = './datasets/Places205'
 
 
@@ -95,19 +95,21 @@ class GenericDataset(data.Dataset):
 
             if self.split!='train':
                 transforms_list = [
-                    transforms.CenterCrop(64),
+                    transforms.Scale(256),
+                    transforms.CenterCrop(224),
                     lambda x: np.asarray(x),
                 ]
             else:
                 if self.random_sized_crop:
                     transforms_list = [
-                        transforms.CenterCrop(64),
+                        transforms.RandomSizedCrop(224),
                         transforms.RandomHorizontalFlip(),
                         lambda x: np.asarray(x),
                     ]
                 else:
                     transforms_list = [
-                        transforms.CenterCrop(64),
+                        transforms.Scale(256),
+                        transforms.RandomCrop(224),
                         transforms.RandomHorizontalFlip(),
                         lambda x: np.asarray(x),
                     ]
@@ -215,11 +217,11 @@ def rotate_img(img, rot):
     if rot == 0: # 0 degrees rotation
         return img
     elif rot == 90: # 90 degrees rotation
-        return np.flipud(np.transpose(img, (1,0,2)))
+        return np.flipud(np.transpose(img, (1,0,2))).copy()
     elif rot == 180: # 90 degrees rotation
-        return np.fliplr(np.flipud(img))
+        return np.fliplr(np.flipud(img)).copy()
     elif rot == 270: # 270 degrees rotation / or -90
-        return np.transpose(np.flipud(img), (1,0,2))
+        return np.transpose(np.flipud(img).copy(), (1,0,2))
     else:
         raise ValueError('rotation should be 0, 90, 180, or 270 degrees')
 
@@ -303,7 +305,7 @@ class DataLoader(object):
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
-    dataset = GenericDataset('imagenet','train', random_sized_crop=True)
+    dataset = GenericDataset('imagenet','train', random_sized_crop=False)
     dataloader = DataLoader(dataset, batch_size=8, unsupervised=True)
 
     for b in dataloader(0):
