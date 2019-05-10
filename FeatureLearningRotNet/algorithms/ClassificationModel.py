@@ -75,7 +75,7 @@ class ClassificationModel(Algorithm):
         #*************** COMPUTE LOSSES *************************
         record = {}
         loss_total = self.criterions['loss'](pred_var, labels_var)
-        record['prec1'] = accuracy(pred_var.data, labels, topk=(1,))[0][0]
+        record['prec1'] = accuracy(pred_var.data, labels, topk=(1,))[0].item()
         record['loss'] = loss_total.data[0]
         #********************************************************
 
