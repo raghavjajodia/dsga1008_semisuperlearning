@@ -245,8 +245,8 @@ if opt.netCont !='':
 
 #Model trainer
 criterion = nn.CrossEntropyLoss()
-optimizer_conv = optim.Adam(model_ft.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=0.005)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
+optimizer_conv = optim.SGD(model_ft.parameters(), lr=opt.lr, momentum=0.9, nesterov=True, weight_decay=0.005)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=5, gamma=0.5)
 model_ft = train_model(model_ft, criterion, optimizer_conv, exp_lr_scheduler, device, opt.outf, f, opt.verbIter, num_epochs=opt.niter)
 torch.save(model_ft.state_dict(), '%s/netD_best_weights.pth' % (opt.outf))
 f.close()
