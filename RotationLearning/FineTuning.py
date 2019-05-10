@@ -203,7 +203,14 @@ if opt.netCont !='':
     model_ft.load_state_dict(torch.load(opt.netCont, map_location=device))
     f.write('Loaded state and continuing training')
 elif opt.net !='':
-    model_ft.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
+    pretrained_dict = torch.load(opt.net, map_location=device)
+    model_dict = model_ft.state_dict()
+    for k, v in pretrained_dict.items():
+        if 'fc' in k:
+            continue
+        model_dict.update({k: v})
+    model_ft.load_state_dict(model_dict)
+    #model_ft.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
     f.write('initialized state with pretrained net')
 
 criterion = nn.CrossEntropyLoss()
