@@ -58,4 +58,4 @@ class Model(nn.Module):
 
     def forward(self, x):
         # TODO
-        return 1/3* (F.softmax(self.resnet_supervised(x), dim=-1) + F.softmax(self.model_rotation(x), dim=-1))
+        return 0.5* (F.softmax(self.resnet_supervised(x), dim=-1) + F.softmax(self.model_rotation(x), dim=-1))
