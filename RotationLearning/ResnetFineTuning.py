@@ -28,6 +28,15 @@ from PIL import Image
 plt.ion()   # interactive mode
 
 
+def getindlist(num):
+    indices = []
+    for i in range(1000):
+        startind = 64*i
+        endind = 64*(i) + num
+        indices += list(range(startind, endind))
+    return indices
+
+
 #General Code for supervised train
 def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path, f, num_epochs=25):
     since = time.time()
@@ -136,6 +145,7 @@ parser.add_argument('--net', default='', help="path to net (to initialize)")
 parser.add_argument('--netCont', default='', help="path to net (to continue training)")
 parser.add_argument('--outf', default='.', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
+parser.add_argument('--trainSamples', type=int, default=64, help='number of training samples to use')
 
 opt = parser.parse_args()
 f = open("{}/training_logs.txt".format(opt.outf),"w+")
@@ -175,7 +185,7 @@ image_datasets = {x: datasets.ImageFolder(os.path.join(opt.dataroot, x), data_tr
 
 assert image_datasets
 
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size= opt.batchSize, pin_memory= True, shuffle=True, num_workers=opt.workers) for x in ['train', 'val']}
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size= opt.batchSize, pin_memory= True, shuffle=False, sampler=SubsetRandomSampler(getindlist(opt.trainSamples)), num_workers=opt.workers) for x in ['train', 'val']}
 
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 class_names = image_datasets['train'].classes
@@ -210,17 +220,17 @@ elif opt.net !='':
             continue
         model_dict.update({k: v})
     model_ft.load_state_dict(model_dict)
-
-    #Finetuning
-    for param in model_ft.parameters():
-        param.requires_grad = False
-    for param in model_ft.layer4.parameters():
-        param.requires_grad = True
-    for param in model_ft.fc.parameters():
-        param.requires_grad = True
-
-    #model_ft.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
     f.write('initialized state with pretrained net')
+
+
+#Finetuning
+for param in model_ft.parameters():
+    param.requires_grad = False
+for param in model_ft.layer4.parameters():
+    param.requires_grad = True
+for param in model_ft.fc.parameters():
+    param.requires_grad = True
+
 
 criterion = nn.CrossEntropyLoss()
 params_tofit = filter(lambda p: p.requires_grad, model_ft.parameters())

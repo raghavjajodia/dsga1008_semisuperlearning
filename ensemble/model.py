@@ -24,7 +24,7 @@ class Model(nn.Module):
         self.model_rotation = model_rotation
 
         # Load pre-trained model
-        self.load_weights('weights1.pth','')
+        self.load_weights('/scratch/rj1408/dl_proj/models/ensemble/resnet-sgd-lr0.1_further3.pth','/scratch/rj1408/dl_proj/models/rotLearn/finetune5/net_epoch_13.pth')
 
     def load_weights(self, pretrained_model_path, pretrained_model_path2, cuda=True):
         # Load pretrained model
@@ -33,8 +33,8 @@ class Model(nn.Module):
 
         # Load pre-trained weights in current model
         with torch.no_grad():
-            self.load_state_dict(pretrained_model, strict=True)
-            self.load_state_dict(pretrained_model2, strict=True)
+            self.resnet_supervised.load_state_dict(pretrained_model, strict=True)
+            self.model_rotation.load_state_dict(pretrained_model2, strict=True)
             
         # Debug loading
         print('Parameters found in pretrained model:')
