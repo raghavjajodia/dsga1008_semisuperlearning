@@ -52,8 +52,11 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
             running_correct_top5 = 0
             n_samples = 0
 
+            end = time.time()
+
             # Iterate over data.
-            for inputs, labels in dataloaders[phase]:
+            for batch_num, (inputs, labels) in enumerate(dataloaders[phase]):
+                data_time = time.time() - end
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 # zero the parameter gradients
@@ -63,6 +66,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
 
                 # forward
                 # track history if only in train
+                forward_start_time  = time.time()
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     loss = criterion(outputs, labels)
@@ -71,6 +75,7 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                     if phase == 'train':
                         loss.backward()
                         optimizer.step()
+                forward_time = time.time() - forward_start_time
 
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
@@ -79,6 +84,18 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                 pred_top_k = torch.topk(outputs, k=top_k, dim=1)[1]
                 target_top_k = labels.view(-1, 1).expand(batchSize, top_k)
                 running_correct_top5 += pred_top_k.eq(target_top_k).int().sum().item()
+
+                if batch_num % 100 == 0:
+                    # Metrics
+                    top_1_acc = running_corrects/n_samples
+                    top_k_acc = running_correct_top5/n_samples
+                    epoch_loss = running_loss / n_samples
+
+                    f.write('{} Loss: {:.4f} Top 1 Acc: {:.4f} Top k Acc: {:.4f}\n'.format(phase, epoch_loss, top_1_acc, top_k_acc))
+                    f.write('Full Batch time: {} , Data load time: {} , Forward time: {}\n'.format(time.time() - end, data_time, forward_time))
+                    f.flush()
+
+                end = time.time()
                 
             # Metrics
             top_1_acc = running_corrects/n_samples
@@ -94,9 +111,6 @@ def train_model(model, criterion, optimizer, scheduler, device, checkpoint_path,
                 best_model_wts = copy.deepcopy(model.state_dict())
 
             torch.save(model.state_dict(), '%s/net_epoch_%d.pth' % (checkpoint_path, epoch))
-
-        f.write()
-        f.flush()
 
     time_elapsed = time.time() - since
     f.write('Training complete in {:.0f}m {:.0f}s \n'.format(time_elapsed // 60, time_elapsed % 60))
@@ -119,6 +133,7 @@ parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. de
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--net', default='', help="path to net (to initialize)")
+parser.add_argument('--netCont', default='', help="path to net (to continue training)")
 parser.add_argument('--outf', default='.', help='folder to output model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 
@@ -144,14 +159,13 @@ top_k = 5
 
 data_transforms = {
     'train': transforms.Compose([
-        transforms.Resize(opt.imageSize),
-        transforms.CenterCrop(opt.imageSize),
+        transforms.RandomResizedCrop(opt.imageSize,scale=(0.5, 1.0)),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ]),
     'val': transforms.Compose([
         transforms.Resize(opt.imageSize),
-        transforms.CenterCrop(opt.imageSize),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ]),
@@ -161,7 +175,7 @@ image_datasets = {x: datasets.ImageFolder(os.path.join(opt.dataroot, x), data_tr
 
 assert image_datasets
 
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size= opt.batchSize, shuffle=True, num_workers=opt.workers) for x in ['train', 'val']}
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size= opt.batchSize, pin_memory= True, shuffle=True, num_workers=opt.workers) for x in ['train', 'val']}
 
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 class_names = image_datasets['train'].classes
@@ -169,10 +183,10 @@ class_names = image_datasets['train'].classes
 if torch.cuda.is_available() and not opt.cuda:
     f.write("WARNING: You have a CUDA device, so you should probably run with --cuda \n")
 
-f.flush()
 
 device = torch.device("cuda:0" if opt.cuda else "cpu")
-
+f.write("using " + str(device) + "\n")
+f.flush()
 
 class Flatten(nn.Module):
     def forward(self, x):
@@ -200,32 +214,36 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
         )
         self.flattened = Flatten()
+        self.dropout = nn.Dropout(p=0.6)
         self.linear = nn.Linear(opt.ndf * 8 * 4 * 4, num_class)            
 
     def forward(self, input):
         if input.cuda and self.ngpu > 1:
             output1 = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
             output2 = nn.parallel.data_parallel(self.flattened, output1, range(self.ngpu))
-            output3 = nn.parallel.data_parallel(self.linear, output2, range(self.ngpu))
+            output3 = nn.parallel.data_parallel(self.dropout, output2, range(self.ngpu))
+            output4 = nn.parallel.data_parallel(self.linear, output3, range(self.ngpu))
         else:
             output1 = self.main(input)
             output2 = self.flattened(output1)
-            output3 = self.linear(output2)
+            output3 = self.dropout(output2)
+            output4 = self.linear(output3)
             
-        return output3
+        return output4
 
+#Model initialization and weights init
 netD = Discriminator(opt.ngpu, len(class_names)).to(device)
-netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
 
-for param in netD.parameters():
-    param.requires_grad = False
-    
-for param in netD.linear.parameters():
-    param.requires_grad = True
+if opt.netCont !='':
+    netD.load_state_dict(torch.load(opt.netCont, map_location=device))
+    f.write('Loaded state and continuing training')
+elif opt.net !='':
+    netD.load_state_dict(torch.load(opt.net, map_location=device), strict=False)
+    f.write('initialized state with pretrained net')
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer_conv = optim.Adam(netD.linear.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+optimizer_conv = optim.Adam(netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=0.005)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 netD = train_model(netD, criterion, optimizer_conv, exp_lr_scheduler, device, opt.outf, f, num_epochs=opt.niter)
 torch.save(netD.state_dict(), '%s/netD_best_weights.pth' % (opt.outf))
